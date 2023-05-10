@@ -54,21 +54,16 @@ const Statistics = ({ good, neutral, bad }) => {
 }
 
 const App = () => {
-  // tallenna napit omaan tilaansa
   const [feedback, setFeedback] = useState({ good: 0, neutral: 0, bad: 0 })
-  const [nFeedback, setNFeedback] = useState(0)
 
   const handleGood = () => {
     setFeedback({ ...feedback, good: feedback.good + 1 })
-    setNFeedback(nFeedback + 1)
   }
   const handleNeutral = () => {
     setFeedback({ ...feedback, neutral: feedback.neutral + 1 })
-    setNFeedback(nFeedback + 1)
   }
   const handleBad = () => {
     setFeedback({ ...feedback, bad: feedback.bad + 1 })
-    setNFeedback(nFeedback + 1)
   }
 
   return (
