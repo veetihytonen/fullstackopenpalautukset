@@ -1,5 +1,30 @@
 import { useState } from 'react'
 
+const WinningAnecdote = ({ anecdotes, votes, getWinningAnecdoteIndex }) => {
+
+  let index = 0
+
+  if (Object.keys(votes).length === 0) {
+    index = 0
+  } else {
+    index = getWinningAnecdoteIndex(votes)
+  }
+
+  return (
+    <p>
+      {anecdotes[index]}
+      <br />
+      has {votes[index] ?? 0} votes
+    </p>
+  )
+}
+
+const Button = ({ text, handleClick }) => (
+  <button onClick={handleClick}>
+    {text}
+  </button>
+)
+
 const App = () => {
   const anecdotes = [
     'If it hurts, do it more often.',
@@ -14,9 +39,43 @@ const App = () => {
 
   const [selected, setSelected] = useState(0)
 
+  const [votes, setVotes] = useState({})
+
+  const getWinningAnecdoteIndex = (votes) => (
+    Object.keys(votes).reduce((a, b) => votes[a] > votes[b] ? a : b)
+  )
+
+  const handleNextAnecdote = () => {
+    const newIndex = Math.floor(Math.random() * anecdotes.length)
+
+    setSelected(newIndex)
+  }
+
+  const handleVote = () => {
+    setVotes({ ...votes, [selected]: votes[selected] ? votes[selected] + 1 : 1 })
+  }
+
   return (
     <div>
-      {anecdotes[selected]}
+      <h1>
+        Anecdote of the day
+      </h1>
+      <p>
+        {anecdotes[selected]} <br />
+        has {votes[selected] ?? 0} votes
+      </p>
+      <span>
+        <Button text={'vote'} handleClick={() => handleVote(selected)} />
+        <Button text={'next anecdote'} handleClick={handleNextAnecdote} />
+      </span>
+      <h1>
+        Anecdote with most votes
+      </h1>
+      <WinningAnecdote
+        anecdotes={anecdotes}
+        getWinningAnecdoteIndex={getWinningAnecdoteIndex}
+        votes={votes}
+      />
     </div>
   )
 }
