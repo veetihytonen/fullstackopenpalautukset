@@ -1,18 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import contactService from './services/contacts'
 
-const Contact = ({ person }) => <p> {person.name} {person.number} </p>
+const Contact = ({ person, rmContact }) => {
 
-const RenderContacts = ({ persons, filter }) => {
+  return <p> {person.name} {person.number} <button onClick={() => rmContact(person.id)} >delete</button> </p >
+}
+
+const RenderContacts = ({ persons, filter, rmContact }) => {
   const filteredPersons = persons.filter(
     (person) => !filter || person.name.toLowerCase().includes(filter.toLowerCase())
   )
 
   return filteredPersons.map(
-    (person) => <Contact key={person.name} person={person} />
+    (person) => <Contact key={person.name} person={person} rmContact={rmContact} />
   )
 }
 
-const Filter = ({ filter, onChange }) => {
+const FilterBox = ({ filter, onChange }) => {
   return (
     <>
       <label>filter shown with: </label>
@@ -41,22 +45,42 @@ const NewContact = ({
 
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: 'Arto Hellas', number: '040-123456' },
-    { name: 'Ada Lovelace', number: '39-44-5323523' },
-    { name: 'Dan Abramov', number: '12-43-234345' },
-    { name: 'Mary Poppendieck', number: '39-23-6423122' }
-  ])
+  const [persons, setPersons] = useState([])
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
 
+  useEffect(() => {
+    contactService
+      .getAll()
+      .then(initalContacts => {
+        setPersons(initalContacts)
+      })
+  }, [])
+
+  const handleModify = () => {
+    const currContact = persons.find(person => person.name === newName)
+    const modifiedContact = { ...currContact, number: newNumber }
+
+
+    contactService
+      .changeNumber(modifiedContact)
+      .then((modifiedList) => {
+        setPersons(modifiedList)
+        clearForm()
+      })
+  }
 
   const submitForm = (event) => {
     event.preventDefault()
 
     if (nameAlreadyExists()) {
-      alert(`${newName} is already added to phonebook`)
+      if (window.confirm(`${newName} is already added to phonebook, 
+      replace the old number with a new one?`)) {
+
+        handleModify()
+
+      }
       return
     }
 
@@ -65,7 +89,15 @@ const App = () => {
       number: newNumber
     }
 
-    setPersons(persons.concat(newPerson))
+    contactService
+      .create(newPerson)
+      .then(returnedContact => {
+        setPersons(persons.concat(returnedContact))
+        clearForm()
+      })
+  }
+
+  const clearForm = () => {
     setNewName('')
     setNewNumber('')
   }
@@ -88,20 +120,28 @@ const App = () => {
     return searchResults.length > 0
   }
 
+  const removeContact = (id) => {
+    if (window.confirm(`Delete ${persons.find(person => person.id === id).name} ?`)) {
+      contactService.remove(id)
+      setPersons(persons.filter(person => person.id !== id))
+    }
+  }
+
 
   return (
     <div>
       <h2>Phonebook</h2>
-      <Filter filter={filter} onChange={handleFilterChange} />
+      <FilterBox filter={filter} onChange={handleFilterChange} />
       <h2>add a new</h2>
       <NewContact
         submitForm={submitForm}
         newName={newName}
         handleNameChange={handleNameChange}
         newNumber={newNumber}
-        handleNumberChange={handleNumberChange} />
+        handleNumberChange={handleNumberChange}
+      />
       <h2>Numbers</h2>
-      <RenderContacts persons={persons} filter={filter} />
+      <RenderContacts persons={persons} filter={filter} rmContact={removeContact} />
     </div>
   )
 
