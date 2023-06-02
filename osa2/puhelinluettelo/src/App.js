@@ -62,7 +62,6 @@ const App = () => {
     const currContact = persons.find(person => person.name === newName)
     const modifiedContact = { ...currContact, number: newNumber }
 
-
     contactService
       .changeNumber(modifiedContact)
       .then((modifiedList) => {
