@@ -44,11 +44,50 @@ const NewContact = ({
   </form>
 
 
+const Notification = ({ message }) => {
+  if (message === null) {
+    return null
+  }
+
+  const notificationStyle = {
+    color: "green",
+    background: "lightgrey",
+    fontSize: 20,
+    borderStyle: "solid",
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10
+  }
+
+  return <div style={notificationStyle}> {message} </div>
+}
+
+const ErrorMessage = ({ message }) => {
+  if (message === null) {
+    return null
+  }
+
+  const notificationStyle = {
+    color: "red",
+    background: "lightgrey",
+    fontSize: 20,
+    borderStyle: "solid",
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10
+  }
+
+  return <div style={notificationStyle}> {message} </div>
+
+}
+
 const App = () => {
   const [persons, setPersons] = useState([])
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
+  const [alertMessage, setAlertMessage] = useState(null)
+  const [errorMessage, setErrorMessage] = useState(null)
 
   useEffect(() => {
     contactService
@@ -58,18 +97,6 @@ const App = () => {
       })
   }, [])
 
-  const handleModify = () => {
-    const currContact = persons.find(person => person.name === newName)
-    const modifiedContact = { ...currContact, number: newNumber }
-
-    contactService
-      .changeNumber(modifiedContact)
-      .then((modifiedList) => {
-        setPersons(modifiedList)
-        clearForm()
-      })
-  }
-
   const submitForm = (event) => {
     event.preventDefault()
 
@@ -77,7 +104,22 @@ const App = () => {
       if (window.confirm(`${newName} is already added to phonebook, 
       replace the old number with a new one?`)) {
 
-        handleModify()
+        const currContact = persons.find(person => person.name === newName)
+        const modifiedContact = { ...currContact, number: newNumber }
+
+        contactService
+          .changeNumber(modifiedContact)
+          .then((modifiedList) => {
+            setPersons(modifiedList)
+            setAlertMessage(`Changed number of ${newName} from ${currContact.number} to ${modifiedContact.number}`)
+            setTimeout(() => {
+              setAlertMessage(null)
+            }, 5000)
+            clearForm()
+          })
+          .catch(error => {
+            setErrorMessage(`Information of ${modifiedContact.name} has already been removed from the server`)
+          })
 
       }
       return
@@ -92,6 +134,10 @@ const App = () => {
       .create(newPerson)
       .then(returnedContact => {
         setPersons(persons.concat(returnedContact))
+        setAlertMessage(`Added ${newName}`)
+        setTimeout(() => {
+          setAlertMessage(null)
+        }, 5000)
         clearForm()
       })
   }
@@ -120,8 +166,14 @@ const App = () => {
   }
 
   const removeContact = (id) => {
-    if (window.confirm(`Delete ${persons.find(person => person.id === id).name} ?`)) {
+    const contactToBeRemoved = persons.find(person => person.id === id)
+
+    if (window.confirm(`Delete ${contactToBeRemoved.name} ?`)) {
       contactService.remove(id)
+      setAlertMessage(`Deleted ${contactToBeRemoved.name}`)
+      setTimeout(() => {
+        setAlertMessage(null)
+      }, 5000)
       setPersons(persons.filter(person => person.id !== id))
     }
   }
@@ -130,6 +182,8 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={alertMessage} />
+      <ErrorMessage message={errorMessage} />
       <FilterBox filter={filter} onChange={handleFilterChange} />
       <h2>add a new</h2>
       <NewContact
