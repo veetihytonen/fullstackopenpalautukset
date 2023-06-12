@@ -22,7 +22,7 @@ const LanguagesListed = ({ languages }) => {
   )
 }
 
-const RenderSearchResults = ({ filter, countryData, searchCountries }) => {
+const RenderSearchResults = ({ filter, countryData, searchCountries, showCountry }) => {
   filter = filter.toLowerCase()
 
   const results = searchCountries(countryData, filter)
@@ -37,10 +37,15 @@ const RenderSearchResults = ({ filter, countryData, searchCountries }) => {
 
   if (results.length > 1) {
     const names = results.map(country =>
-      <p key={country.tld[0]}> {country.name.common} </p>
+      <li style={{ listStyleType: 'none' }} key={country.tld[0]}>
+        <label key={country.tld[0]}> {country.name.common} </label>
+        <button onClick={() => showCountry(country)}>show</button>
+      </li >
     )
 
-    return names
+    return <div>
+      {names}
+    </div>
   }
 
   if (results.length === 1) {
@@ -55,7 +60,7 @@ const RenderSearchResults = ({ filter, countryData, searchCountries }) => {
         </p>
         <h3>languages:</h3>
         <LanguagesListed languages={country.languages} />
-        <img src={country.flags.png} />
+        <img src={country.flags.png} width={150} height={'auto'} />
       </div>
     )
   }
@@ -71,13 +76,15 @@ const RenderSearchResults = ({ filter, countryData, searchCountries }) => {
 
 const App = () => {
   const [filter, setFilter] = useState('')
-  const [searchResults, setSearchResults] = useState([])
   const [countryData, setCountryData] = useState([])
 
   useEffect(() => {
     dataService
       .getAll()
       .then(data => {
+        data.sort((a, b) => (
+          a.name.common.toLowerCase() > b.name.common.toLowerCase()) ? 1 : -1
+        )
         setCountryData(data)
       })
   }, [])
@@ -95,13 +102,18 @@ const App = () => {
     return results
   }
 
+  const showCountry = (country) => {
+    setFilter(country.name.common)
+  }
+
   return (
     <div>
       <SearchBox filter={filter} onChange={handleFilterChange} />
       <RenderSearchResults
         filter={filter}
         countryData={countryData}
-        searchCountries={searchCountries} />
+        searchCountries={searchCountries}
+        showCountry={showCountry} />
     </div>
   )
 
