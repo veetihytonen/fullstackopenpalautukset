@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import dataService from './services/countryData'
+import fetchWeather from './services/weatherData'
 
 const SearchBox = ({ filter, onChange }) => {
   return (
@@ -22,11 +23,11 @@ const LanguagesListed = ({ languages }) => {
   )
 }
 
-const RenderSearchResults = ({ filter, countryData, searchCountries, showCountry }) => {
-  filter = filter.toLowerCase()
+const RenderWeatherData = ({ weatherData }) => {
+  console.log('render Wather:', weatherData)
+}
 
-  const results = searchCountries(countryData, filter)
-
+const RenderSearchResults = ({ filter, results, weatherData, showCountry }) => {
   if (!filter) {
     return null
   }
@@ -61,6 +62,7 @@ const RenderSearchResults = ({ filter, countryData, searchCountries, showCountry
         <h3>languages:</h3>
         <LanguagesListed languages={country.languages} />
         <img src={country.flags.png} width={150} height={'auto'} />
+        <RenderWeatherData weatherData={weatherData} />
       </div>
     )
   }
@@ -77,17 +79,37 @@ const RenderSearchResults = ({ filter, countryData, searchCountries, showCountry
 const App = () => {
   const [filter, setFilter] = useState('')
   const [countryData, setCountryData] = useState([])
+  const [searchResults, setSearchResults] = useState([])
+  const [weatherData, setWeatherData] = useState({})
+  const api_key = process.env.REACT_APP_API_KEY
+  let last_full_match = ''
 
+  // fetch countrydata from api on first render
   useEffect(() => {
     dataService
       .getAll()
       .then(data => {
         data.sort((a, b) => (
-          a.name.common.toLowerCase() > b.name.common.toLowerCase()) ? 1 : -1
-        )
+          a.name.common.toLowerCase() > b.name.common.toLowerCase()) ? 1 : -1)
         setCountryData(data)
       })
   }, [])
+
+  useEffect(() => {
+    if (!filter) {
+      setSearchResults([])
+      return
+    }
+    console.log(filter)
+    setSearchResults(searchCountries(countryData, filter))
+    console.log(searchResults)
+    if (searchResults.length === 1) {
+      const country = searchResults[0]
+      fetchWeather(country.latlng[0], country.latlng[1], api_key)
+        .then(data => setWeatherData(data))
+    }
+
+  }, [filter])
 
   const handleFilterChange = (event) => {
     setFilter(event.target.value)
@@ -95,8 +117,8 @@ const App = () => {
 
   const searchCountries = (data, filter) => {
     const results = data.filter(country =>
-      country.name.common.toLowerCase().includes(filter)
-      || country.name.official.toLowerCase().includes(filter)
+      country.name.common.toLowerCase().includes(filter.toLowerCase())
+      || country.name.official.toLowerCase().includes(filter.toLowerCase())
     )
 
     return results
@@ -111,8 +133,8 @@ const App = () => {
       <SearchBox filter={filter} onChange={handleFilterChange} />
       <RenderSearchResults
         filter={filter}
-        countryData={countryData}
-        searchCountries={searchCountries}
+        results={searchResults}
+        weatherData={weatherData}
         showCountry={showCountry} />
     </div>
   )
