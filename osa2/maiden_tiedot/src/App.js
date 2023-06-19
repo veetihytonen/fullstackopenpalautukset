@@ -24,7 +24,20 @@ const LanguagesListed = ({ languages }) => {
 }
 
 const RenderWeatherData = ({ weatherData }) => {
-  console.log('render Wather:', weatherData)
+
+  if (Object.keys(weatherData).length === 0) {
+    return null
+  }
+
+  const weather_icon_url = `https://openweathermap.org/img/wn/${weatherData.current.weather[0].icon}@2x.png`
+
+  return (
+    <div>
+      <p>temperture: {weatherData.current.temp} Celcius</p>
+      <img src={weather_icon_url} />
+      <p>wind {weatherData.current.wind_speed}</p>
+    </div>
+  )
 }
 
 const RenderSearchResults = ({ filter, results, weatherData, showCountry }) => {
@@ -54,7 +67,7 @@ const RenderSearchResults = ({ filter, results, weatherData, showCountry }) => {
 
     return (
       <div>
-        <h2>{country.name.common}</h2>
+        <h1>{country.name.common}</h1>
         <p>
           capital {country.capital} <br />
           area {country.area}
@@ -62,6 +75,7 @@ const RenderSearchResults = ({ filter, results, weatherData, showCountry }) => {
         <h3>languages:</h3>
         <LanguagesListed languages={country.languages} />
         <img src={country.flags.png} width={150} height={'auto'} />
+        <h2>Weather in {country.capital}</h2>
         <RenderWeatherData weatherData={weatherData} />
       </div>
     )
@@ -77,8 +91,8 @@ const RenderSearchResults = ({ filter, results, weatherData, showCountry }) => {
 }
 
 const App = () => {
-  const [filter, setFilter] = useState('')
   const [countryData, setCountryData] = useState([])
+  const [filter, setFilter] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [weatherData, setWeatherData] = useState({})
   const api_key = process.env.REACT_APP_API_KEY
@@ -95,26 +109,6 @@ const App = () => {
       })
   }, [])
 
-  useEffect(() => {
-    if (!filter) {
-      setSearchResults([])
-      return
-    }
-    console.log(filter)
-    setSearchResults(searchCountries(countryData, filter))
-    console.log(searchResults)
-    if (searchResults.length === 1) {
-      const country = searchResults[0]
-      fetchWeather(country.latlng[0], country.latlng[1], api_key)
-        .then(data => setWeatherData(data))
-    }
-
-  }, [filter])
-
-  const handleFilterChange = (event) => {
-    setFilter(event.target.value)
-  }
-
   const searchCountries = (data, filter) => {
     const results = data.filter(country =>
       country.name.common.toLowerCase().includes(filter.toLowerCase())
@@ -122,6 +116,26 @@ const App = () => {
     )
 
     return results
+  }
+
+  const results = searchCountries(countryData, filter)
+
+  if (searchResults.length != results.length) {
+    setSearchResults(results)
+
+    if (results.length === 1) {
+      const country = results[0]
+      fetchWeather(country.latlng[0], country.latlng[1], api_key)
+        .then(data => setWeatherData(data))
+    } else {
+      setWeatherData({})
+    }
+  }
+
+
+
+  const handleFilterChange = (event) => {
+    setFilter(event.target.value)
   }
 
   const showCountry = (country) => {
