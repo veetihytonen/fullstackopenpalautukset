@@ -93,6 +93,7 @@ const App = () => {
     contactService
       .getAll()
       .then(initalContacts => {
+        console.log(initalContacts)
         setPersons(initalContacts)
       })
   }, [])
